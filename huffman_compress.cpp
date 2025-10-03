@@ -1,7 +1,6 @@
 #include<bits/stdc++.h>
 #include <fcntl.h>
 #include <unistd.h>
-//implementarea original e in C++ si de acolo ma inspir pentru Rust
 class Node{
 public:
     int data;
@@ -54,23 +53,23 @@ std::vector<std::string> huffmanCodes(std::string s, std::vector<int> freq){
 
 std::vector<uint8_t> bitsToBytes(const std::string& bits) {
     std::vector<uint8_t> bytes;
-    uint8_t current_byte = 0;
-    int bit_count = 0;
+    uint8_t currentByte = 0;
+    int bitCount = 0;
 
     for (char bit : bits) {
-        current_byte = (current_byte << 1) | (bit == '1' ? 1 : 0);
-        bit_count++;
+        currentByte = (currentByte << 1) | (bit == '1' ? 1 : 0);
+        bitCount++;
 
-        if (bit_count == 8) {
-            bytes.push_back(current_byte);
-            current_byte = 0;
-            bit_count = 0;
+        if (bitCount == 8) {
+            bytes.push_back(currentByte);
+            currentByte = 0;
+            bitCount = 0;
         }
     }
 
-    if (bit_count > 0) {
-        current_byte <<= (8 - bit_count);
-        bytes.push_back(current_byte);
+    if (bitCount > 0) {
+        currentByte <<= (8 - bitCount);
+        bytes.push_back(currentByte);
     }
 
     return bytes;
@@ -101,61 +100,60 @@ int main(int argc, char* argv[]){ //argv contine cale spre fisier
         std::cout<<"Fisierul este gol \n";
         return 1;
     }
-    std::string alfabet;
+    std::string alphabet;
     std::vector<int> freq;
     for (const auto& pair : freqMap) {
-        alfabet += pair.first;
+        alphabet += pair.first;
         freq.push_back(pair.second);
     }
-    std::vector<std::string> codes = huffmanCodes(alfabet, freq);
+    std::vector<std::string> codes = huffmanCodes(alphabet, freq);
     std::unordered_map<char, std::string> encoder;
 
-    for (size_t i = 0; i < alfabet.size(); i++) {
-        encoder[alfabet[i]] = codes[i];
+    for (size_t i = 0; i < alphabet.size(); i++) {
+        encoder[alphabet[i]] = codes[i];
     }
 
-    char new_path[256];
-    strcpy(new_path, argv[1]);
-    strcat(new_path, "_compressed");
+    char newPath[256];
+    strcpy(newPath, argv[1]);
+    strcat(newPath, "_compressed");
 
-    int fd_out = open(new_path, O_RDWR | O_CREAT | O_TRUNC, 0666);
-    if (fd_out == -1){
+    int fdOut = open(newPath, O_RDWR | O_CREAT | O_TRUNC, 0666);
+    if (fdOut == -1){
         perror("eroare la deschiderea fisierului de output\n");
         return 1;
     }
-    uint32_t unique_chars = alfabet.size();
-    write(fd_out, &unique_chars, sizeof(unique_chars));
-    for (size_t i = 0; i < alfabet.size(); i++) {
-        write(fd_out, &alfabet[i], sizeof(char));
-        write(fd_out, &freq[i], sizeof(int));
+    uint32_t uniqueChars = alphabet.size();
+    write(fdOut, &uniqueChars, sizeof(uniqueChars));
+    for (size_t i = 0; i < alphabet.size(); i++) {
+        write(fdOut, &alphabet[i], sizeof(char));
+        write(fdOut, &freq[i], sizeof(int));
     }
     fd = open(argv[1], O_RDONLY);
     if (fd == -1) {
         perror("Eroare la redeschiderea fisierului pentru compresie");
-        close(fd_out);
+        close(fdOut);
         return 1;
     }
-    std::string compressed_bits;
+    std::string compressedBits;
 
     while ((bytesRead = read(fd, buffer, sizeof(buffer))) > 0) {
         for (ssize_t i = 0; i < bytesRead; i++) {
             char c = buffer[i];
-            compressed_bits += encoder[c];
+            compressedBits += encoder[c];
         }
     }
     close(fd);
-    auto compressed_bytes = bitsToBytes(compressed_bits);
+    auto compressedBytes = bitsToBytes(compressedBits);
 
-    // Write compressed data size and data
-    uint32_t compressed_size = compressed_bytes.size();
-    write(fd_out, &compressed_size, sizeof(compressed_size));
-    write(fd_out, compressed_bytes.data(), compressed_bytes.size());
+    uint32_t compressedSize = compressedBytes.size();
+    write(fdOut, &compressedSize, sizeof(compressedSize));
+    write(fdOut, compressedBytes.data(), compressedBytes.size());
 
-    close(fd_out);
-    std::cout << "Compresie completă:\n";
+    close(fdOut);
+    std::cout << "Compresie completa:\n";
     std::cout << " - Fisier original: " << totalChars << " caractere\n";
-    std::cout << " - Caractere unice: " << alfabet.size() << "\n";
-    std::cout << " - Date comprimate: " << compressed_bytes.size() << " bytes\n";
-    std::cout << " - Fisier output: " << new_path << "\n";
+    std::cout << " - Caractere unice: " << alphabet.size() << "\n";
+    std::cout << " - Date comprimate: " << compressedBytes.size() << " bytes\n";
+    std::cout << " - Fisier output: " << newPath << "\n";
     return 0;
 }
